@@ -4,7 +4,7 @@ var path = require('path')
 var app = express();
 app.use('/public', express.static(__dirname + '/public'));
 
-mongoose.connect("mongodb://localhost:5000/Company");
+mongoose.connect("mongodb://nandy:nandy@ds061370.mongolab.com:61370/company");
 
 var Schema = new mongoose.Schema(
 	{
