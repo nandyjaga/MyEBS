@@ -1,0 +1,90 @@
+app. js
+
+
+var express = require('express');
+var session = require('express-session')
+var mongoose = require('mongoose');
+var path = require('path')
+var server = express();
+var bodyParser = require('body-parser');
+
+server.use('/public', express.static(__dirname + '/public'));
+server.use(session({secret: 'ebssecurity07031986',resave: false,saveUninitialized: true}));
+
+
+server.use(bodyParser.urlencoded({'extended':'true'}));            // parse application/x-www-form-urlencoded
+server.use(bodyParser.json());                                     // parse application/json
+server.use(bodyParser.json({ type: 'application/vnd.api+json' })); // parse applicat
+
+mongoose.connect("mongodb://localhost:5000/ebsDB");
+
+function requestErrorHandler(req,res,action){
+	res.send(500, "Error occured "+action);
+}
+
+
+---------------------------------------------------------------------------------------------------
+	sessionRouter.js
+---------------------------------------------------------------------------------------------------
+var userRouter = require('./routers/userRouter.js');
+userRouter(server,mongoose,requestErrorHandler);
+
+var sessionRouter = require('./routers/sessionRouter.js');
+sessionRouter(server,mongoose,requestErrorHandler);
+
+server.listen(3000);	
+console.log("Server started @ port number : 3000");
+
+
+'use strict';
+module.exports=function(server,mongoose) {
+'use strict';
+    server.get('/isLoggedIn', function(req, res){
+		var loginStatus=null;
+		if(req.session.uuid==undefined || req.session.uuid==null){
+			loginStatus= {"loginStatus":false};
+		}else{
+			loginStatus= {"loginStatus":true};
+		}
+		res.send(loginStatus);
+	});
+}
+
+---------------------------------------------------------------------------------------------------
+	userRouter.js Router
+---------------------------------------------------------------------------------------------------
+
+'use strict';
+module.exports=function(server,mongoose,requestErrorHandler) {
+	var userSchema = new mongoose.Schema({userName: String,userId:String,email:String, password: String});
+    var ebsUsers = mongoose.model("ebsUsers",userSchema);
+	
+	server.post('/getVal', function(req, res){
+	   ebsUsers.findOne({userId:"admin",password:"superadmin"}, function (err, userD) {
+			console.log(userD);
+			if (err) {
+				requestErrorHandler(req,res," while Login action")
+				res.send({"loginSuccess":false});
+			}else{
+				if(userD==null){
+					req.session.uuid=null;
+					res.send({"loginSuccess":false});
+				}else{
+					req.session.uuid=req.body.uname;
+					res.send({"loginSuccess":true});
+				}
+			}
+		});
+	});
+}
+
+--------------------------------------------------------------
+db scripts
+--------------------------------------------------------------
+db.createCollection("ebsUsers", {autoIndexID : true} );
+db.ebsUsers.insert({userName: 'admin', password: 'superadmin'});
+db.ebsUsers.find({userId:"admin"});
+
+
+
+db.ebsUsers.insert({userName: 'Admin',userId:'admin',email:'jagadeesh@anz.com', password: 'superadmin'});
